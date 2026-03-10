@@ -31,7 +31,9 @@ const testFiles = [
   'scripts/youtube-review-report.test.js',
   'scripts/youtube-image-planner.test.js',
   'scripts/youtube-image-fetcher.test.js',
-  'scripts/youtube-video-assembler.test.js'
+  'scripts/youtube-video-assembler.test.js',
+  'scripts/youtube-tts-generator.test.js',
+  'scripts/youtube-thumbnail-generator.test.js'
 ];
 
 const BOX_W = 58; // inner width between ║ delimiters

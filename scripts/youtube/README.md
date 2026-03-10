@@ -27,20 +27,37 @@
   script_{n}.md를 장면 단위로 나누고 `/output/{date}/images_{n}/images_plan.json` 생성.
 
 - **image-fetcher.js**  
-  images_plan.json을 읽어 각 장면용 이미지를 준비. (현재는 placeholder PNG + images_meta.json)
+  images_plan.json을 읽어 각 장면용 이미지를 준비. (기본은 placeholder PNG)  
+  환경변수로 API 연동 가능:  
+  - `IMAGE_PROVIDER=placeholder|pexels|openai`  
+  - `PEXELS_API_KEY=...` (pexels)  
+  - `OPENAI_API_KEY=...` (openai 이미지 생성)
 
 - **video-assembler.js**  
   images_meta.json과 이미지 파일로 FFmpeg 합성 → `/output/{date}/video_{n}.mp4`. (FFmpeg 없으면 해당 영상 스킵)
+
+- **tts-generator.js**  
+  script_{n}.md 기반 나레이션 오디오 생성 → `/output/{date}/audio_{n}.wav`  
+  - 기본: 무음 WAV (키 없이도 파이프라인 동작)  
+  - OpenAI TTS:
+    - `TTS_PROVIDER=openai`
+    - `OPENAI_API_KEY=...`
+    - (옵션) `OPENAI_TTS_MODEL=gpt-4o-mini-tts`, `OPENAI_TTS_VOICE=alloy`
+
+- **thumbnail-generator.js**  
+  topics.json 기반 썸네일 후보 계획 + placeholder PNG 생성 → `/output/{date}/thumbnail_{n}_plan.json`, `thumbnail_{n}.png`
 
 ### 실행 순서
 
 1. `node scripts/youtube/keyword-collector.js`
 2. `node scripts/youtube/topic-selector.js`
 3. `node scripts/youtube/script-writer.js`
+4. `node scripts/youtube/tts-generator.js`
 4. `node scripts/youtube/image-planner.js`
 5. `node scripts/youtube/image-fetcher.js`
 6. `node scripts/youtube/video-assembler.js` (FFmpeg 필요)
 7. `node scripts/youtube/subtitle-generator.js`
+8. `node scripts/youtube/thumbnail-generator.js`
 8. `node scripts/youtube/review-report.js`
 
 ### 테스트
@@ -54,5 +71,7 @@ node tests/scripts/youtube-image-fetcher.test.js
 node tests/scripts/youtube-video-assembler.test.js
 node tests/scripts/youtube-subtitle-generator.test.js
 node tests/scripts/youtube-review-report.test.js
+node tests/scripts/youtube-tts-generator.test.js
+node tests/scripts/youtube-thumbnail-generator.test.js
 ```
 

@@ -9,9 +9,9 @@ const { run: runTopicSelector } = require(path.join(__dirname, '..', '..', 'scri
 const { run: runScriptWriter } = require(path.join(__dirname, '..', '..', 'scripts', 'youtube', 'script-writer.js'));
 const { run: runImagePlanner } = require(path.join(__dirname, '..', '..', 'scripts', 'youtube', 'image-planner.js'));
 
-function test(name, fn) {
+async function test(name, fn) {
   try {
-    fn();
+    await fn();
     console.log(`  ✓ ${name}`);
     return true;
   } catch (err) {
@@ -25,18 +25,18 @@ function createTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'youtube-imgfetch-'));
 }
 
-function runTests() {
+async function runTests() {
   console.log('\n=== Testing scripts/youtube/image-fetcher.js ===\n');
   let passed = 0;
   let failed = 0;
 
-  if (test('createPlaceholderPng returns Buffer', () => {
+  if (await test('createPlaceholderPng returns Buffer', async () => {
     const buf = createPlaceholderPng();
     assert.ok(Buffer.isBuffer(buf));
     assert.ok(buf.length > 0);
   })) passed++; else failed++;
 
-  if (test('fetchFromPlan writes PNGs and images_meta.json', () => {
+  if (await test('fetchFromPlan writes PNGs and images_meta.json', async () => {
     const tmp = createTempDir();
     const planPath = path.join(tmp, 'images_plan.json');
     fs.mkdirSync(tmp, { recursive: true });
@@ -48,7 +48,9 @@ function runTests() {
       ],
     };
     fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
-    const { metaPath, imageCount } = fetchFromPlan(planPath);
+    // Force placeholder path for deterministic tests
+    process.env.IMAGE_PROVIDER = 'placeholder';
+    const { metaPath, imageCount } = await fetchFromPlan(planPath);
     assert.ok(fs.existsSync(metaPath));
     assert.strictEqual(imageCount, 2);
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
@@ -57,7 +59,7 @@ function runTests() {
     assert.ok(fs.existsSync(path.join(tmp, 'image_2.png')));
   })) passed++; else failed++;
 
-  if (test('run() produces images for existing plans', () => {
+  if (await test('run() produces images for existing plans', async () => {
     const baseDir = createTempDir();
     collectKeywords({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
     const outputDir = path.join(baseDir, 'output', '2025-01-08');
@@ -66,21 +68,31 @@ function runTests() {
     runTopicSelector({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
     runScriptWriter({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
     runImagePlanner({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
-    const { results } = run({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
+    // async run
+    const { results } = await run({ baseDir, now: new Date('2025-01-08T12:00:00Z') });
     assert.strictEqual(results.length, 5);
     assert.ok(fs.existsSync(path.join(outputDir, 'images_1', 'images_meta.json')));
     assert.ok(fs.existsSync(path.join(outputDir, 'images_1', 'image_1.png')));
   })) passed++; else failed++;
 
-  if (test('run() throws when no images_plan.json found', () => {
+  if (await test('run() throws when no images_plan.json found', async () => {
     const baseDir = createTempDir();
     const outputDir = path.join(baseDir, 'output', '2025-01-08');
     fs.mkdirSync(outputDir, { recursive: true });
-    assert.throws(() => run({ baseDir, now: new Date('2025-01-08T12:00:00Z') }), (e) => e.message.includes('No images_plan'));
+    await run({ baseDir, now: new Date('2025-01-08T12:00:00Z') })
+      .then(() => { throw new Error('Expected error'); })
+      .catch((e) => {
+        assert.ok(e.message.includes('No images_plan'));
+      });
   })) passed++; else failed++;
 
   console.log(`\nResults: Passed: ${passed}, Failed: ${failed}`);
   process.exit(failed > 0 ? 1 : 0);
 }
 
-runTests();
+runTests().catch((err) => {
+  console.log(`  ✗ unhandled error`);
+  console.log(`    Error: ${err.message}`);
+  console.log('\nResults: Passed: 0, Failed: 1');
+  process.exit(1);
+});

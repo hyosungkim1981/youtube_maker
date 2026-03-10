@@ -72,11 +72,25 @@ function assembleVideo(imagesDir, metaPath, outputPath, durationSec = TARGET_DUR
     '-f', 'concat',
     '-safe', '0',
     '-i', listPath,
+  ];
+
+  // Optional audio track
+  const outputDir = path.dirname(outputPath);
+  const match = outputPath.match(/video_(\d+)\.mp4$/);
+  const n = match ? match[1] : null;
+  const audioPath = n ? path.join(outputDir, `audio_${n}.wav`) : null;
+  if (audioPath && fs.existsSync(audioPath)) {
+    args.push('-i', audioPath);
+    args.push('-c:a', 'aac');
+    args.push('-shortest');
+  }
+
+  args.push(
     '-c:v', 'libx264',
     '-pix_fmt', 'yuv420p',
     '-t', String(durationSec),
     outputPath,
-  ];
+  );
 
   const result = spawnSync(ffmpeg, args, {
     cwd: imagesDir,
