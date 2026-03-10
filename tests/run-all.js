@@ -23,7 +23,15 @@ const testFiles = [
   'ci/validators.test.js',
   'scripts/claw.test.js',
   'scripts/setup-package-manager.test.js',
-  'scripts/skill-create-output.test.js'
+  'scripts/skill-create-output.test.js',
+  'scripts/youtube-keyword-collector.test.js',
+  'scripts/youtube-topic-selector.test.js',
+  'scripts/youtube-script-writer.test.js',
+  'scripts/youtube-subtitle-generator.test.js',
+  'scripts/youtube-review-report.test.js',
+  'scripts/youtube-image-planner.test.js',
+  'scripts/youtube-image-fetcher.test.js',
+  'scripts/youtube-video-assembler.test.js'
 ];
 
 const BOX_W = 58; // inner width between ║ delimiters
